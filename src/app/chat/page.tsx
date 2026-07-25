@@ -140,10 +140,30 @@ export default function ChatPage() {
     if ("speechSynthesis" in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.9;
+      utterance.rate = 0.85;
+      utterance.pitch = 1.1;
+      // Try to pick a warm female voice if available
+      const voices = window.speechSynthesis.getVoices();
+      const preferred = voices.find(v => 
+        v.name.includes("Samantha") || v.name.includes("Karen") || 
+        v.name.includes("Google UK English Female") || v.name.includes("Fiona")
+      ) || voices.find(v => v.lang.startsWith("en") && v.name.toLowerCase().includes("female"))
+        || voices[0];
+      if (preferred) utterance.voice = preferred;
       window.speechSynthesis.speak(utterance);
     }
   }
+
+  // Auto-speak AI responses for voice-first experience
+  useEffect(() => {
+    if (messages.length > 0) {
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg.role === "assistant") {
+        speakText(lastMsg.content);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages]);
 
   return (
     <main className="min-h-screen bg-background flex flex-col">
