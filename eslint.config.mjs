@@ -15,8 +15,8 @@ const eslintConfig = defineConfig([
   ]),
   {
     rules: {
-      // Loading from localStorage in useEffect is a legitimate pattern
-      "react-hooks/set-state-in-effect": "warn",
+      // Loading from localStorage in useEffect on mount is a valid pattern
+      "react-hooks/set-state-in-effect": "off",
     },
   },
 ]);

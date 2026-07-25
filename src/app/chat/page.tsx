@@ -1,17 +1,11 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { ChatMessageList } from "@/components/ChatMessageList";
+import { ChatModeSelector } from "@/components/ChatModeSelector";
 import type { ChatMessage, ChatMode } from "@/lib/types";
-
-const MODES: { value: ChatMode; label: string; emoji: string }[] = [
-  { value: "calm", label: "Calm", emoji: "🌊" },
-  { value: "crisis", label: "Crisis", emoji: "🆘" },
-  { value: "journal", label: "Journal", emoji: "📓" },
-  { value: "caregiver", label: "Caregiver", emoji: "💙" },
-];
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -23,7 +17,6 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<ReturnType<typeof Object> | null>(null);
 
-  // Handle ?mode= URL param (e.g. /chat?mode=caregiver)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const urlMode = params.get("mode");
@@ -36,7 +29,7 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, streamingText]);
 
-  async function handleSend() {
+  const handleSend = useCallback(async () => {
     const text = input.trim();
     if (!text || isLoading) return;
 
@@ -68,9 +61,7 @@ export default function ChatPage() {
         }),
       });
 
-      if (!res.ok) {
-        throw new Error("Failed to get response");
-      }
+      if (!res.ok) throw new Error("Failed to get response");
 
       const reader = res.body?.getReader();
       const decoder = new TextDecoder();
@@ -80,8 +71,7 @@ export default function ChatPage() {
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-          const chunk = decoder.decode(value, { stream: true });
-          fullText += chunk;
+          fullText += decoder.decode(value, { stream: true });
           setStreamingText(fullText);
         }
       }
@@ -111,7 +101,7 @@ export default function ChatPage() {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [input, isLoading, mode]);
 
   function toggleVoice() {
     if (isListening) {
@@ -160,97 +150,29 @@ export default function ChatPage() {
         Skip to chat input
       </a>
 
-      {/* Header */}
       <header className="border-b px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-xl font-bold">⚓ AnchorAI</span>
           <span className="text-xs text-muted-foreground">Companion</span>
         </div>
-        <nav className="flex gap-1" aria-label="Chat mode selection">
-          {MODES.map((m) => (
-            <Button
-              key={m.value}
-              variant={mode === m.value ? "default" : "outline"}
-              size="sm"
-              onClick={() => setMode(m.value)}
-              aria-pressed={mode === m.value}
-              aria-label={`Switch to ${m.label} mode`}
-            >
-              <span aria-hidden="true">{m.emoji}</span>
-              <span className="hidden sm:inline ml-1">{m.label}</span>
-            </Button>
-          ))}
-        </nav>
+        <ChatModeSelector currentMode={mode} onModeChange={setMode} />
       </header>
 
-      {/* Messages */}
       <div
         className="flex-1 overflow-y-auto p-4 space-y-4 max-w-3xl mx-auto w-full"
         role="log"
         aria-live="polite"
         aria-label="Chat messages"
       >
-        {messages.length === 0 && !streamingText && (
-          <div className="text-center text-muted-foreground py-12">
-            <p className="text-lg font-medium mb-2">Hello. I&apos;m AnchorAI.</p>
-            <p className="text-sm">Your recovery companion. Talk, type, or use voice — I&apos;m here 24/7.</p>
-            <p className="text-xs mt-4">Try saying: &quot;I&apos;m feeling anxious about tonight&quot;</p>
-          </div>
-        )}
-
-        {messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-          >
-            <Card
-              className={`max-w-[80%] p-3 ${
-                msg.role === "user"
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted"
-              }`}
-            >
-              <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-              {msg.role === "assistant" && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="mt-1 h-6 text-xs"
-                  onClick={() => speakText(msg.content)}
-                  aria-label="Read message aloud"
-                >
-                  🔊 Read Aloud
-                </Button>
-              )}
-            </Card>
-          </div>
-        ))}
-
-        {streamingText && (
-          <div className="flex justify-start">
-            <Card className="max-w-[80%] p-3 bg-muted">
-              <p className="text-sm whitespace-pre-wrap">{streamingText}</p>
-              <span className="inline-block w-2 h-4 bg-primary animate-pulse ml-1" aria-hidden="true" />
-            </Card>
-          </div>
-        )}
-
-        {isLoading && !streamingText && (
-          <div className="flex justify-start">
-            <Card className="p-3 bg-muted">
-              <div className="flex gap-1" aria-label="AI is thinking">
-                <span className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "0ms" }} />
-                <span className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "150ms" }} />
-                <span className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "300ms" }} />
-              </div>
-            </Card>
-          </div>
-        )}
-
+        <ChatMessageList
+          messages={messages}
+          streamingText={streamingText}
+          isLoading={isLoading}
+          onSpeakMessage={speakText}
+        />
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area */}
       <div className="border-t p-4 max-w-3xl mx-auto w-full">
         <div className="flex gap-2 items-end" id="chat-input">
           <Textarea
