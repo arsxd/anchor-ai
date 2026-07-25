@@ -20,10 +20,6 @@ export default function CheckInPage() {
   const [recentHistory, setRecentHistory] = useState<MoodEntry[]>([])
   const [showInsight, setShowInsight] = useState(false)
 
-  useEffect(() => {
-    loadRecentHistory()
-  }, [])
-
   function loadRecentHistory() {
     try {
       const stored = localStorage.getItem('anchor_mood_history')
@@ -35,6 +31,10 @@ export default function CheckInPage() {
       // Silently handle parse errors
     }
   }
+
+  useEffect(() => {
+    loadRecentHistory()
+  }, [])
 
   async function handleMoodSelect(mood: MoodType) {
     setSelectedMood(mood)

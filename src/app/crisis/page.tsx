@@ -17,7 +17,6 @@ const GROUNDING_STEPS = [
 export default function CrisisPage() {
   const [aiResponse, setAiResponse] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
-  const [hasSpoken, setHasSpoken] = useState(false);
   const responseRef = useRef<HTMLDivElement>(null);
   const hasFetchedRef = useRef(false);
 
@@ -71,7 +70,6 @@ export default function CrisisPage() {
           utterance.rate = 0.85;
           utterance.pitch = 1.0;
           window.speechSynthesis.speak(utterance);
-          setHasSpoken(true);
         }
       } catch {
         setAiResponse(

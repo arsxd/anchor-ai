@@ -27,6 +27,7 @@ export default function CaregiverPage() {
   const [error, setError] = useState("");
   const [activeRequest, setActiveRequest] = useState<"guidance" | "deescalation" | null>(null);
 
+  // Load mood history from localStorage on mount
   useEffect(() => {
     try {
       const stored = localStorage.getItem("anchor_mood_history");
