@@ -7,6 +7,7 @@ interface ChatServiceInput {
   mode: ChatMode;
   profile: UserProfile | null;
   recentMoods: MoodEntry[];
+  language?: string;
 }
 
 interface ChatPromptResult {
@@ -23,7 +24,8 @@ export function prepareChatPrompt(input: ChatServiceInput): ChatPromptResult {
   const systemPrompt = buildChatSystemPrompt(
     input.mode,
     input.profile,
-    input.recentMoods
+    input.recentMoods,
+    input.language
   );
 
   return { sanitizedMessage, systemPrompt };

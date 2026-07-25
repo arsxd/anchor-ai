@@ -13,11 +13,12 @@ import type { ChatMode, MoodEntry, UserProfile } from "@/lib/types";
 export async function POST(req: NextRequest): Promise<Response> {
   try {
     const body = await req.json();
-    const { message, mode, profile, recentMoods } = body as {
+    const { message, mode, profile, recentMoods, language } = body as {
       message: unknown;
       mode: unknown;
       profile: UserProfile | null;
       recentMoods: MoodEntry[];
+      language?: string;
     };
 
     // Validate message
@@ -52,6 +53,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       mode: mode as ChatMode,
       profile: profile ?? null,
       recentMoods: recentMoods ?? [],
+      language: language ?? "en",
     });
 
     // Stream Gemini response

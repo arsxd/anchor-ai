@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ChatMessageList } from "@/components/ChatMessageList";
 import { ChatModeSelector } from "@/components/ChatModeSelector";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Mic, MicOff, Send, Anchor } from "lucide-react";
 import type { ChatMessage, ChatMode } from "@/lib/types";
 
@@ -59,6 +60,7 @@ export default function ChatPage() {
           mode,
           profile: profile ? JSON.parse(profile) : null,
           recentMoods: moods ? JSON.parse(moods).slice(-5) : [],
+          language: localStorage.getItem("anchor_language") || "en",
         }),
       });
 
@@ -176,7 +178,10 @@ export default function ChatPage() {
           <span className="text-xl font-bold flex items-center gap-2"><Anchor className="h-5 w-5 text-primary" /> AnchorAI</span>
           <span className="text-xs text-muted-foreground">Companion</span>
         </div>
-        <ChatModeSelector currentMode={mode} onModeChange={setMode} />
+        <div className="flex items-center gap-2">
+          <LanguageSwitcher />
+          <ChatModeSelector currentMode={mode} onModeChange={setMode} />
+        </div>
       </header>
 
       <div

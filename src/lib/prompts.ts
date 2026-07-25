@@ -7,13 +7,28 @@ import type { ChatMode, MoodEntry, UserProfile } from "./types";
 export function buildChatSystemPrompt(
   mode: ChatMode,
   profile: UserProfile | null,
-  recentMoods: MoodEntry[]
+  recentMoods: MoodEntry[],
+  language?: string
 ): string {
   const base = getBasePrompt(mode);
   const personalization = profile ? buildPersonalizationContext(profile) : "";
   const moodContext = recentMoods.length > 0 ? buildMoodContext(recentMoods) : "";
+  const langInstruction = language && language !== "en" 
+    ? `\n\nIMPORTANT: Respond in ${getLanguageName(language)}. Use the user's language naturally.` 
+    : "";
 
-  return `${base}\n\n${personalization}\n\n${moodContext}`.trim();
+  return `${base}\n\n${personalization}\n\n${moodContext}${langInstruction}`.trim();
+}
+
+function getLanguageName(code: string): string {
+  const map: Record<string, string> = {
+    hi: "Hindi (हिन्दी)",
+    ta: "Tamil (தமிழ்)",
+    te: "Telugu (తెలుగు)",
+    kn: "Kannada (ಕನ್ನಡ)",
+    ml: "Malayalam (മലയാളം)",
+  };
+  return map[code] || "English";
 }
 
 /**

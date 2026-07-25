@@ -10,9 +10,19 @@ export const MAX_CONTACTS_COUNT = 5;
 export const GEMINI_MODEL = "gemini-flash-latest";
 
 export const CRISIS_HOTLINES = [
-  { name: "SAMHSA Helpline", number: "1-800-662-4357", available: "24/7" },
-  { name: "988 Suicide & Crisis Lifeline", number: "988", available: "24/7" },
-  { name: "Emergency Services", number: "911", available: "24/7" },
+  { name: "Vandrevala Foundation", number: "1860-2662-345", available: "24/7" },
+  { name: "iCall", number: "9152987821", available: "Mon-Sat 8am-10pm" },
+  { name: "NIMHANS", number: "080-46110007", available: "24/7" },
+  { name: "Emergency", number: "112", available: "24/7" },
+] as const;
+
+export const SUPPORTED_LANGUAGES = [
+  { code: "en", label: "English" },
+  { code: "hi", label: "हिन्दी" },
+  { code: "ta", label: "தமிழ்" },
+  { code: "te", label: "తెలుగు" },
+  { code: "kn", label: "ಕನ್ನಡ" },
+  { code: "ml", label: "മലയാളം" },
 ] as const;
 
 export const SCRIPT_SCENARIOS = {

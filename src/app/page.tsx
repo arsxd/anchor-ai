@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import Link from "next/link";
 import { APP_DESCRIPTION, APP_NAME, CRISIS_HOTLINES } from "@/lib/constants";
 import { Mic, ClipboardList, Shield, Heart, Brain, Zap, MessageCircle, BarChart3, Phone } from "lucide-react";
+import { PersonalizedInsight } from "@/components/PersonalizedInsight";
 
 export default function Home() {
   return (
@@ -57,6 +58,9 @@ export default function Home() {
           Multi-modal · Voice + Touch + Text · Works when cognitive load is highest
         </p>
       </section>
+
+      {/* Personalized AI Insight — for returning users */}
+      <PersonalizedInsight />
 
       {/* Stats Strip */}
       <section className="relative container mx-auto px-4 pb-16" aria-label="Platform statistics">
