@@ -1,4 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="64" fill="#0a0a0a"/>
-  <text x="256" y="320" text-anchor="middle" font-size="280" font-family="sans-serif" fill="white">⚓</text>
+  <rect width="512" height="512" rx="96" fill="#3B9B8F"/>
+  <g transform="translate(128, 80) scale(1.6)">
+    <path d="M80 20C80 20 40 60 40 120C40 145 58 160 80 160C102 160 120 145 120 120C120 60 80 20 80 20Z" fill="none" stroke="white" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="80" y1="160" x2="80" y2="200" stroke="white" stroke-width="12" stroke-linecap="round"/>
+    <line x1="60" y1="185" x2="100" y2="185" stroke="white" stroke-width="12" stroke-linecap="round"/>
+  </g>
 </svg>

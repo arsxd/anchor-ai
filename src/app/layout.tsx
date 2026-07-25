@@ -1,17 +1,19 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Nunito, Nunito_Sans } from "next/font/google";
 import "./globals.css";
 import { APP_DESCRIPTION, APP_NAME } from "@/lib/constants";
 import Navigation from "@/components/Navigation";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const nunito = Nunito({
+  variable: "--font-sans",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
-const geistMono = Geist_Mono({
+const nunitoSans = Nunito_Sans({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  weight: ["400", "600"],
 });
 
 export const metadata: Metadata = {
@@ -26,11 +28,11 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0a0a0a",
+  themeColor: "#3B9B8F",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  maximumScale: 5,
+  userScalable: true,
 };
 
 export default function RootLayout({
@@ -39,19 +41,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en">
       <head>
         <link rel="apple-touch-icon" href="/icons/icon.svg" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${nunito.variable} ${nunitoSans.variable} antialiased`}>
         <Navigation />
-        <main id="main-content">
-          {children}
-        </main>
+        {children}
         <ServiceWorkerRegistration />
       </body>
     </html>

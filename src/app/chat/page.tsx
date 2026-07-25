@@ -175,42 +175,56 @@ export default function ChatPage() {
       </div>
 
       <div className="border-t p-4 max-w-3xl mx-auto w-full">
-        <div className="flex gap-2 items-end" id="chat-input">
-          <Textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-              }
-            }}
-            placeholder="Type a message, or tap the mic to speak..."
-            className="min-h-[44px] max-h-32 resize-none"
-            aria-label="Chat message input"
-            disabled={isLoading}
-          />
-          <Button
-            variant={isListening ? "destructive" : "outline"}
-            size="icon"
+        {/* Voice-first: Big mic button as primary interaction */}
+        <div className="flex flex-col items-center gap-3" id="chat-input">
+          {/* Primary: Voice Button */}
+          <button
             onClick={toggleVoice}
-            aria-label={isListening ? "Stop listening" : "Start voice input"}
-            className="h-11 w-11 shrink-0"
+            aria-label={isListening ? "Stop listening" : "Tap to speak"}
+            className={`relative flex items-center justify-center rounded-full transition-all ${
+              isListening
+                ? "w-20 h-20 bg-destructive text-white voice-active shadow-lg shadow-destructive/30"
+                : "w-20 h-20 bg-primary text-primary-foreground hover:bg-primary/90 shadow-md hover:shadow-lg"
+            }`}
           >
-            {isListening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
-          </Button>
-          <Button
-            onClick={handleSend}
-            disabled={!input.trim() || isLoading}
-            size="icon"
-            aria-label="Send message"
-            className="h-11 w-11 shrink-0"
-          >
-            <Send className="h-5 w-5" />
-          </Button>
+            {isListening ? <MicOff className="h-8 w-8" /> : <Mic className="h-8 w-8" />}
+            {isListening && (
+              <span className="absolute -bottom-6 text-xs font-medium text-destructive">Listening...</span>
+            )}
+            {!isListening && !input && (
+              <span className="absolute -bottom-6 text-xs font-medium text-muted-foreground">Tap to speak</span>
+            )}
+          </button>
+
+          {/* Secondary: Text input (visible but de-emphasized) */}
+          <div className="flex w-full gap-2 items-end mt-2">
+            <Textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+              placeholder="Or type here..."
+              className="min-h-[44px] max-h-24 resize-none text-sm"
+              aria-label="Chat message input"
+              disabled={isLoading}
+            />
+            <Button
+              onClick={handleSend}
+              disabled={!input.trim() || isLoading}
+              size="icon"
+              aria-label="Send message"
+              className="h-11 w-11 shrink-0"
+            >
+              <Send className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
-        <p className="text-xs text-muted-foreground mt-2 text-center">
-          Zero-typing: tap mic to speak · AI reads responses aloud · Powered by Google Gemini
+        <p className="text-xs text-muted-foreground mt-3 text-center">
+          Voice-first · AI reads responses aloud · Powered by Google Gemini
         </p>
       </div>
     </main>
