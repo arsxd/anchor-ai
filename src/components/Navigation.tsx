@@ -28,6 +28,7 @@ const recoveryLinks = [
 const caregiverLinks = [
   { href: '/', label: 'Home', icon: Anchor },
   { href: '/caregiver', label: 'Dashboard', icon: Heart },
+  { href: '/caregiver-portal', label: 'Portal', icon: Heart },
   { href: '/chat', label: 'Chat', icon: MessageCircle },
 ];
 
