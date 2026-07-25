@@ -16,6 +16,8 @@ import {
   Handshake,
   Waves,
   HeartCrack,
+  PenLine,
+  Send,
 } from 'lucide-react';
 import { STORAGE_KEYS } from '@/lib/constants';
 import type { UserProfile, ScriptScenario } from '@/lib/types';
@@ -81,6 +83,7 @@ export default function ScriptsPage() {
   const [copied, setCopied] = useState(false);
   const [shared, setShared] = useState(false);
   const [autoSpeak, setAutoSpeak] = useState(true);
+  const [customScenario, setCustomScenario] = useState('');
   const abortControllerRef = useRef<AbortController | null>(null);
   const scriptRef = useRef<HTMLDivElement>(null);
 
@@ -165,6 +168,59 @@ export default function ScriptsPage() {
       setIsLoading(false);
     }
   }, []);
+
+  const generateCustomScript = useCallback(async () => {
+    if (!customScenario.trim() || isLoading) return;
+
+    if (abortControllerRef.current) abortControllerRef.current.abort();
+    if ('speechSynthesis' in window) { window.speechSynthesis.cancel(); setIsSpeaking(false); }
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    setSelectedScenario(null);
+    setScript('');
+    setError(null);
+    setIsLoading(true);
+    setCopied(false);
+    setShared(false);
+
+    try {
+      const profile = getProfile();
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: `Generate a first-person emergency script for this specific situation: "${customScenario}". Write it as words I can say aloud to refuse, cope, or protect myself. Be concise, personal, and actionable. No headers or formatting — just the script.`,
+          mode: 'calm',
+          profile,
+          recentMoods: [],
+        }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) throw new Error('Failed to generate script');
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('No response stream');
+      const decoder = new TextDecoder();
+      let fullText = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        fullText += decoder.decode(value, { stream: true });
+        setScript(fullText);
+      }
+
+      setTimeout(() => scriptRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') return;
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [customScenario, isLoading]);
 
   const handleReadAloud = () => {
     if (!script) return;
@@ -275,6 +331,42 @@ export default function ScriptsPage() {
                 </div>
               </button>
             ))}
+          </div>
+
+          {/* Custom Scenario */}
+          <div className="mt-4 rounded-xl border-2 border-dashed border-border p-4 hover:border-primary/50 transition-colors">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 rounded-lg p-2 bg-secondary">
+                <PenLine className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm mb-2">Custom Scenario</p>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={customScenario}
+                    onChange={(e) => setCustomScenario(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && generateCustomScript()}
+                    placeholder="Describe your situation..."
+                    className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                    aria-label="Describe your custom scenario"
+                    disabled={isLoading}
+                  />
+                  <Button
+                    size="sm"
+                    onClick={generateCustomScript}
+                    disabled={!customScenario.trim() || isLoading}
+                    aria-label="Generate script for custom scenario"
+                    className="shrink-0"
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  E.g. &quot;My ex texted me&quot; or &quot;I&apos;m alone on a Friday night&quot;
+                </p>
+              </div>
+            </div>
           </div>
         </section>
 
