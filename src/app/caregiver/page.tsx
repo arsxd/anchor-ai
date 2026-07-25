@@ -12,6 +12,7 @@ import type { MoodEntry, RiskAssessment, UserProfile } from "@/lib/types";
 export default function CaregiverPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [moodHistory, setMoodHistory] = useState<MoodEntry[]>([]);
+  const [journalEntries, setJournalEntries] = useState<{ id: string; text: string; mood?: string; timestamp: string }[]>([]);
   const [riskAssessment, setRiskAssessment] = useState<RiskAssessment | null>(null);
   const [aiGuidance, setAiGuidance] = useState("");
   const [aiStatus, setAiStatus] = useState("");
@@ -21,6 +22,7 @@ export default function CaregiverPage() {
   useEffect(() => {
     const storedProfile = localStorage.getItem("anchor_user_profile");
     const storedMoods = localStorage.getItem("anchor_mood_history");
+    const storedJournal = localStorage.getItem("anchor_journal");
 
     if (storedProfile) setProfile(JSON.parse(storedProfile));
 
@@ -30,6 +32,10 @@ export default function CaregiverPage() {
       setRiskAssessment(detectRiskPattern(moods));
     } else {
       setRiskAssessment(detectRiskPattern([]));
+    }
+
+    if (storedJournal) {
+      try { setJournalEntries(JSON.parse(storedJournal)); } catch { /* silent */ }
     }
   }, []);
 
@@ -134,6 +140,12 @@ export default function CaregiverPage() {
             ) : (
               <p className="text-sm text-muted-foreground">No check-in data yet</p>
             )}
+            {journalEntries.length > 0 && (
+              <p className="text-sm text-muted-foreground mt-2 italic border-l-2 border-primary/30 pl-2">
+                &ldquo;{journalEntries[journalEntries.length - 1].text}&rdquo;
+                <span className="text-xs ml-1">· {formatTimeAgo(journalEntries[journalEntries.length - 1].timestamp)}</span>
+              </p>
+            )}
           </CardContent>
         </Card>
 
@@ -218,14 +230,18 @@ export default function CaregiverPage() {
             <CardTitle className="text-base">📋 Activity Timeline</CardTitle>
           </CardHeader>
           <CardContent>
-            {moodHistory.length === 0 ? (
+            {moodHistory.length === 0 && journalEntries.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">
                 No activity yet. When {patientName} uses AnchorAI, their check-ins will appear here.
               </p>
             ) : (
               <div className="space-y-3 max-h-[400px] overflow-y-auto">
-                {[...moodHistory].reverse().slice(0, 20).map((entry) => (
-                  <TimelineEntry key={entry.id} entry={entry} />
+                {buildTimeline(moodHistory, journalEntries).slice(0, 20).map((item) => (
+                  item.type === 'mood' ? (
+                    <TimelineEntry key={item.id} entry={item.data as MoodEntry} />
+                  ) : (
+                    <JournalTimelineEntry key={item.id} entry={item.data as { text: string; timestamp: string; mood?: string }} />
+                  )
                 ))}
               </div>
             )}
@@ -261,19 +277,24 @@ export default function CaregiverPage() {
               <div className="h-20 bg-muted animate-pulse rounded" />
             )}
             {aiGuidance && !isLoadingGuidance && (
-              <div className="p-4 rounded-lg bg-muted space-y-3" role="status" aria-live="polite">
-                {aiGuidance.split('\n').filter(Boolean).map((line, i) => {
-                  // Section headers (lines starting with emoji)
-                  if (/^[🫂✅🚫💡⚠️]/.test(line)) {
-                    return <p key={i} className="font-semibold text-sm text-foreground mt-2 first:mt-0">{line}</p>;
-                  }
-                  // Bullet points
-                  if (line.trim().startsWith('•') || line.trim().startsWith('-')) {
-                    return <p key={i} className="text-sm text-foreground pl-2 leading-relaxed">{line}</p>;
-                  }
-                  // Regular text
-                  return <p key={i} className="text-sm text-muted-foreground leading-relaxed">{line}</p>;
-                })}
+              <div className="p-4 rounded-lg bg-muted space-y-4" role="status" aria-live="polite">
+                {parseGuidanceSections(aiGuidance).map((section, i) => (
+                  <div key={i} className="space-y-1.5">
+                    <p className="font-semibold text-sm text-foreground">{section.header}</p>
+                    {section.lines.map((line, j) => (
+                      <p
+                        key={j}
+                        className={`text-sm leading-relaxed ${
+                          line.trim().startsWith('•') || line.trim().startsWith('-')
+                            ? 'pl-3 text-foreground'
+                            : 'text-muted-foreground'
+                        }`}
+                      >
+                        {line}
+                      </p>
+                    ))}
+                  </div>
+                ))}
               </div>
             )}
           </CardContent>
@@ -353,6 +374,85 @@ function SuggestedAction({ icon, text, priority }: { icon: string; text: string;
     }`}>
       <span aria-hidden="true">{icon}</span>
       <span className={priority === "high" ? "font-medium" : ""}>{text}</span>
+    </div>
+  );
+}
+
+/**
+ * Parses AI guidance text into structured sections by emoji headers.
+ * Handles both newline-separated and single-line responses.
+ */
+function parseGuidanceSections(text: string): { header: string; lines: string[] }[] {
+  // Split by emoji headers (🫂 ✅ 🚫 💡 ⚠️)
+  const headerPattern = /([🫂✅🚫💡⚠️]\s*[^🫂✅🚫💡⚠️]*)/g;
+  const matches = text.match(headerPattern);
+
+  if (!matches || matches.length === 0) {
+    // Fallback: just show as plain text
+    return [{ header: '', lines: [text] }];
+  }
+
+  return matches.map((section) => {
+    const trimmed = section.trim();
+    // Split into header (first line/sentence before : or first bullet) and content
+    const colonIdx = trimmed.indexOf(':');
+    let header: string;
+    let content: string;
+
+    if (colonIdx > 0 && colonIdx < 40) {
+      header = trimmed.substring(0, colonIdx + 1).trim();
+      content = trimmed.substring(colonIdx + 1).trim();
+    } else {
+      // No colon — first sentence is header
+      const firstDot = trimmed.indexOf('.');
+      if (firstDot > 0 && firstDot < 60) {
+        header = trimmed.substring(0, firstDot + 1).trim();
+        content = trimmed.substring(firstDot + 1).trim();
+      } else {
+        header = trimmed;
+        content = '';
+      }
+    }
+
+    // Split content into lines by bullet points or newlines
+    const lines: string[] = [];
+    if (content) {
+      // Split by bullet points
+      const parts = content.split(/(?=•)|(?=-\s)/);
+      for (const part of parts) {
+        const cleaned = part.trim();
+        if (cleaned) lines.push(cleaned);
+      }
+    }
+
+    return { header, lines };
+  });
+}
+
+function buildTimeline(
+  moods: MoodEntry[],
+  journals: { id: string; text: string; timestamp: string; mood?: string }[]
+): { id: string; type: 'mood' | 'journal'; timestamp: string; data: MoodEntry | { text: string; timestamp: string; mood?: string } }[] {
+  const items = [
+    ...moods.map((m) => ({ id: m.id, type: 'mood' as const, timestamp: m.timestamp, data: m })),
+    ...journals.map((j) => ({ id: j.id, type: 'journal' as const, timestamp: j.timestamp, data: j })),
+  ];
+  return items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+}
+
+function JournalTimelineEntry({ entry }: { entry: { text: string; timestamp: string; mood?: string } }) {
+  return (
+    <div className="flex gap-3 items-start p-3 rounded-lg bg-primary/5 border border-primary/10">
+      <div className="text-lg shrink-0" aria-hidden="true">📝</div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-sm font-medium">Shared a thought</span>
+          <span className="text-xs text-muted-foreground shrink-0">
+            {formatTimeAgo(entry.timestamp)}
+          </span>
+        </div>
+        <p className="text-sm text-muted-foreground mt-1 italic">&ldquo;{entry.text}&rdquo;</p>
+      </div>
     </div>
   );
 }
