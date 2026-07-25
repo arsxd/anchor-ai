@@ -14,8 +14,6 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   weight: ["400", "500"],
 });
-  weight: ["400", "600"],
-});
 
 export const metadata: Metadata = {
   title: `${APP_NAME} — Recovery & Prevention Platform`,
