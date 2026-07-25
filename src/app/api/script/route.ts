@@ -1,10 +1,9 @@
 import { NextRequest } from "next/server";
 import { streamGeminiResponse } from "@/services/gemini";
-import { buildScriptSystemPrompt } from "@/lib/prompts";
-import { sanitizeForLLM } from "@/lib/sanitize";
+import { prepareScriptPrompt } from "@/services/script-service";
+import { containsInjection } from "@/lib/sanitize";
 import { validateScenario } from "@/lib/validators";
 import type { ScriptScenario, UserProfile } from "@/lib/types";
-import { SCRIPT_SCENARIOS } from "@/lib/constants";
 
 /**
  * POST /api/script
@@ -28,18 +27,29 @@ export async function POST(req: NextRequest): Promise<Response> {
       );
     }
 
+    // Check scenario for injection attempts
+    if (containsInjection(scenario as string)) {
+      return Response.json(
+        { success: false, error: "Input contains disallowed content" },
+        { status: 400 }
+      );
+    }
+
+    // Check profile fields for injection attempts
+    if (profile?.name && containsInjection(profile.name)) {
+      return Response.json(
+        { success: false, error: "Input contains disallowed content" },
+        { status: 400 }
+      );
+    }
+
     const validScenario = scenario as ScriptScenario;
-    const scenarioLabel = SCRIPT_SCENARIOS[validScenario].label;
 
-    // Build user message for Gemini
-    const userMessage = sanitizeForLLM(
-      `Generate a personalized emergency script for this scenario: ${scenarioLabel}. ` +
-        `The user is facing pressure related to "${scenarioLabel}". ` +
-        `Write a first-person script they can say aloud or read to themselves.`
-    );
-
-    // Build system prompt with profile context
-    const systemPrompt = buildScriptSystemPrompt(profile ?? null);
+    // Build prompt via service
+    const { userMessage, systemPrompt } = prepareScriptPrompt({
+      scenario: validScenario,
+      profile: profile ?? null,
+    });
 
     // Stream Gemini response
     const stream = await streamGeminiResponse(userMessage, systemPrompt);

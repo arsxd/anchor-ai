@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { streamGeminiResponse } from "@/services/gemini";
-import { buildChatSystemPrompt } from "@/lib/prompts";
-import { sanitizeForLLM, containsInjection } from "@/lib/sanitize";
+import { prepareChatPrompt } from "@/services/chat-service";
+import { containsInjection } from "@/lib/sanitize";
 import { validateChatInput, validateChatMode } from "@/lib/validators";
 import type { ChatMode, MoodEntry, UserProfile } from "@/lib/types";
 
@@ -46,15 +46,13 @@ export async function POST(req: NextRequest): Promise<Response> {
       );
     }
 
-    // Sanitize input
-    const sanitizedMessage = sanitizeForLLM(message as string);
-
-    // Build system prompt with full user context
-    const systemPrompt = buildChatSystemPrompt(
-      mode as ChatMode,
-      profile ?? null,
-      recentMoods ?? []
-    );
+    // Sanitize and build prompt via service
+    const { sanitizedMessage, systemPrompt } = prepareChatPrompt({
+      message: message as string,
+      mode: mode as ChatMode,
+      profile: profile ?? null,
+      recentMoods: recentMoods ?? [],
+    });
 
     // Stream Gemini response
     const stream = await streamGeminiResponse(sanitizedMessage, systemPrompt);

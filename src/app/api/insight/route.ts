@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { generateGeminiResponse } from "@/services/gemini";
 import { buildInsightSystemPrompt } from "@/lib/prompts";
 import { validateMoodScore, validateMoodType } from "@/lib/validators";
+import { containsInjection } from "@/lib/sanitize";
 import { detectRiskPattern } from "@/services/insight-service";
 import type { MoodEntry, UserProfile } from "@/lib/types";
 
@@ -29,11 +30,27 @@ export async function POST(req: NextRequest): Promise<Response> {
       );
     }
 
+    // Check currentMood for injection attempts
+    if (containsInjection(currentMood as string)) {
+      return Response.json(
+        { success: false, error: "Input contains disallowed content" },
+        { status: 400 }
+      );
+    }
+
     // Validate score
     const scoreValidation = validateMoodScore(currentScore);
     if (!scoreValidation.valid) {
       return Response.json(
         { success: false, error: scoreValidation.error },
+        { status: 400 }
+      );
+    }
+
+    // Check for injection in profile fields
+    if (profile?.name && containsInjection(profile.name)) {
+      return Response.json(
+        { success: false, error: "Input contains disallowed content" },
         { status: 400 }
       );
     }

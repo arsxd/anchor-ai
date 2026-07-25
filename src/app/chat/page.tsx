@@ -23,6 +23,15 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<ReturnType<typeof Object> | null>(null);
 
+  // Handle ?mode= URL param (e.g. /chat?mode=caregiver)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlMode = params.get("mode");
+    if (urlMode && ["calm", "crisis", "journal", "caregiver"].includes(urlMode)) {
+      setMode(urlMode as ChatMode);
+    }
+  }, []);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, streamingText]);

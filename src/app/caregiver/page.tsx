@@ -73,7 +73,10 @@ export default function CaregiverPage() {
         const data = await res.json();
 
         if (data.success && data.data) {
-          setGuidanceText(data.data);
+          setGuidanceText(data.data.guidance || data.data);
+          if (data.data.riskAssessment) {
+            setRiskAssessment(data.data.riskAssessment);
+          }
         } else if (data.error) {
           setError(data.error);
         } else {

@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { generateGeminiResponse } from "@/services/gemini";
 import { buildCaregiverSystemPrompt } from "@/lib/prompts";
+import { containsInjection } from "@/lib/sanitize";
 import { detectRiskPattern } from "@/services/insight-service";
 import type { MoodEntry, UserProfile } from "@/lib/types";
 
@@ -21,6 +22,14 @@ export async function POST(req: NextRequest): Promise<Response> {
     if (!moodHistory || !Array.isArray(moodHistory)) {
       return Response.json(
         { success: false, error: "Mood history must be an array" },
+        { status: 400 }
+      );
+    }
+
+    // Check for injection in profile fields
+    if (profile?.name && containsInjection(profile.name)) {
+      return Response.json(
+        { success: false, error: "Input contains disallowed content" },
         { status: 400 }
       );
     }

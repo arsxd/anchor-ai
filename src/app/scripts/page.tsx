@@ -12,6 +12,7 @@ export default function ScriptsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [shareConfirm, setShareConfirm] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const getProfile = (): UserProfile | null => {
@@ -119,6 +120,34 @@ export default function ScriptsPage() {
       await navigator.clipboard.writeText(script);
     } catch {
       // Fallback: select text for manual copy
+    }
+  };
+
+  const handleShareToCaregiver = async () => {
+    if (!script) return;
+
+    // Try native share API first (mobile)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'My Emergency Script - AnchorAI',
+          text: script,
+        });
+        setShareConfirm(true);
+        setTimeout(() => setShareConfirm(false), 3000);
+        return;
+      } catch {
+        // User cancelled or share failed, fall through to clipboard
+      }
+    }
+
+    // Fallback: copy to clipboard
+    try {
+      await navigator.clipboard.writeText(script);
+      setShareConfirm(true);
+      setTimeout(() => setShareConfirm(false), 3000);
+    } catch {
+      // Silent fail
     }
   };
 
@@ -232,7 +261,22 @@ export default function ScriptsPage() {
                   >
                     📋 Copy
                   </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleShareToCaregiver}
+                    disabled={!script}
+                    aria-label="Share script with caregiver"
+                  >
+                    📤 Share with Caregiver
+                  </Button>
                 </div>
+              )}
+
+              {shareConfirm && (
+                <p className="mt-2 text-sm text-green-700 dark:text-green-300" role="status" aria-live="polite">
+                  ✓ Copied - share with your caregiver
+                </p>
               )}
             </CardContent>
           </Card>

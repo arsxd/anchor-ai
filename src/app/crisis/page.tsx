@@ -19,10 +19,26 @@ export default function CrisisPage() {
   const [isStreaming, setIsStreaming] = useState(false);
   const responseRef = useRef<HTMLDivElement>(null);
   const hasFetchedRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (hasFetchedRef.current) return;
     hasFetchedRef.current = true;
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
     async function fetchCrisisGuidance() {
       setIsStreaming(true);
@@ -45,6 +61,7 @@ export default function CrisisPage() {
             profile,
             recentMoods: [],
           }),
+          signal: controller.signal,
         });
 
         if (!res.ok) throw new Error('Failed to get crisis response');
@@ -71,7 +88,8 @@ export default function CrisisPage() {
           utterance.pitch = 1.0;
           window.speechSynthesis.speak(utterance);
         }
-      } catch {
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return;
         setAiResponse(
           'You are safe. Breathe slowly. If you need immediate help, please call one of the numbers below.'
         );
