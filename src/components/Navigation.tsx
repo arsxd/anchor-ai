@@ -26,6 +26,7 @@ const recoveryLinks = [
   { href: '/chat', label: 'Chat', icon: MessageCircle },
   { href: '/scripts', label: 'Scripts', icon: ClipboardList },
   { href: '/checkin', label: 'Check-in', icon: BarChart3 },
+  { href: '/progress', label: 'Progress', icon: BarChart3 },
 ];
 
 const caregiverLinks = [
