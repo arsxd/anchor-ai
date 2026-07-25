@@ -45,7 +45,7 @@ export function PersonalizedInsight() {
       setStats({ streak, totalCheckins, trend: risk.recentTrend, daysInRecovery });
 
       if (moodHistory.length > 0) {
-        fetchInsight(userProfile, moodHistory);
+        doFetchInsight(userProfile, moodHistory);
       } else {
         setInsight(`${userProfile.name}, your anchor: "${userProfile.myWhy}"`);
         setLoading(false);
@@ -53,7 +53,7 @@ export function PersonalizedInsight() {
     } catch { setLoading(false); }
   }, []);
 
-  async function fetchInsight(userProfile: UserProfile, moodHistory: MoodEntry[]) {
+  async function doFetchInsight(userProfile: UserProfile, moodHistory: MoodEntry[]) {
     try {
       const response = await fetch('/api/insight', {
         method: 'POST',

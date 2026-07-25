@@ -55,15 +55,15 @@ describe('buildScriptSystemPrompt', () => {
 });
 
 describe('buildInsightSystemPrompt', () => {
-  it('includes prevention instruction', () => {
+  it('includes instruction for actionable tip', () => {
     const prompt = buildInsightSystemPrompt(mockProfile);
-    expect(prompt).toContain('prevention');
+    expect(prompt).toContain('actionable');
   });
 });
 
 describe('buildCaregiverSystemPrompt', () => {
-  it('includes CRAFT method reference', () => {
+  it('includes structured format instructions', () => {
     const prompt = buildCaregiverSystemPrompt(mockProfile);
-    expect(prompt).toContain('CRAFT');
+    expect(prompt).toContain('Say this');
   });
 });
