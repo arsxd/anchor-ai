@@ -123,12 +123,25 @@ export default function ChatPage() {
     }
 
     const recognition = new SR();
-    recognition.lang = "en-US";
+    const langCode = localStorage.getItem("anchor_language") || "en";
+    const sttLangMap: Record<string, string> = {
+      en: "en-IN", hi: "hi-IN", ta: "ta-IN", te: "te-IN", kn: "kn-IN", ml: "ml-IN",
+    };
+    recognition.lang = sttLangMap[langCode] || "en-IN";
     recognition.continuous = false;
     recognition.interimResults = false;
 
     recognition.onresult = (event: { results: { [key: number]: { [key: number]: { transcript: string } } } }) => {
-      setInput(event.results[0][0].transcript);
+      const transcript = event.results[0][0].transcript;
+      setInput(transcript);
+      // Auto-send after voice input
+      setTimeout(() => {
+        const fakeInput = transcript;
+        if (fakeInput.trim()) {
+          setInput("");
+          autoSend(fakeInput);
+        }
+      }, 300);
     };
     recognition.onend = () => setIsListening(false);
     recognition.onerror = () => setIsListening(false);
@@ -138,20 +151,95 @@ export default function ChatPage() {
     setIsListening(true);
   }
 
+  // Auto-send for voice messages (bypasses input state)
+  async function autoSend(text: string) {
+    if (!text.trim() || isLoading) return;
+
+    const userMsg: ChatMessage = {
+      id: crypto.randomUUID(),
+      role: "user",
+      content: text,
+      timestamp: new Date().toISOString(),
+      mode,
+    };
+
+    setMessages((prev) => [...prev, userMsg]);
+    setIsLoading(true);
+    setStreamingText("");
+
+    try {
+      const profile = localStorage.getItem("anchor_user_profile");
+      const moods = localStorage.getItem("anchor_mood_history");
+
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: text,
+          mode,
+          profile: profile ? JSON.parse(profile) : null,
+          recentMoods: moods ? JSON.parse(moods).slice(-5) : [],
+          language: localStorage.getItem("anchor_language") || "en",
+        }),
+      });
+
+      if (!res.ok) throw new Error("Failed to get response");
+
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      let fullText = "";
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          fullText += decoder.decode(value, { stream: true });
+          setStreamingText(fullText);
+        }
+      }
+
+      setMessages((prev) => [
+        ...prev,
+        { id: crypto.randomUUID(), role: "assistant", content: fullText, timestamp: new Date().toISOString(), mode },
+      ]);
+      setStreamingText("");
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        { id: crypto.randomUUID(), role: "assistant", content: "I'm having trouble connecting right now. Please try again.", timestamp: new Date().toISOString(), mode },
+      ]);
+      setStreamingText("");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   function speakText(text: string) {
     if ("speechSynthesis" in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = 0.85;
       utterance.pitch = 1.1;
-      // Try to pick a warm female voice if available
+      
+      // Set language for TTS based on user's selection
+      const langCode = localStorage.getItem("anchor_language") || "en";
+      const langMap: Record<string, string> = {
+        en: "en-IN",
+        hi: "hi-IN",
+        ta: "ta-IN",
+        te: "te-IN",
+        kn: "kn-IN",
+        ml: "ml-IN",
+      };
+      utterance.lang = langMap[langCode] || "en-IN";
+
+      // Try to pick a matching voice
       const voices = window.speechSynthesis.getVoices();
-      const preferred = voices.find(v => 
-        v.name.includes("Samantha") || v.name.includes("Karen") || 
-        v.name.includes("Google UK English Female") || v.name.includes("Fiona")
-      ) || voices.find(v => v.lang.startsWith("en") && v.name.toLowerCase().includes("female"))
-        || voices[0];
-      if (preferred) utterance.voice = preferred;
+      const matchingVoice = voices.find(v => v.lang === utterance.lang) 
+        || voices.find(v => v.lang.startsWith(langCode))
+        || voices.find(v => v.lang.startsWith("en"));
+      if (matchingVoice) utterance.voice = matchingVoice;
+      
       window.speechSynthesis.speak(utterance);
     }
   }

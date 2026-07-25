@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Send, PenLine, Sparkles } from 'lucide-react'
 import { MOOD_CONFIG, type MoodType, type MoodEntry, type RiskAssessment } from '@/lib/types'
 
 interface InsightResponse {
@@ -19,6 +20,9 @@ export default function CheckInPage() {
   const [error, setError] = useState<string | null>(null)
   const [recentHistory, setRecentHistory] = useState<MoodEntry[]>([])
   const [showInsight, setShowInsight] = useState(false)
+  const [journalInput, setJournalInput] = useState('')
+  const [journalInsight, setJournalInsight] = useState<string | null>(null)
+  const [journalLoading, setJournalLoading] = useState(false)
 
   function loadRecentHistory() {
     try {
@@ -129,6 +133,58 @@ export default function CheckInPage() {
     }
   }
 
+  async function handleJournalSubmit() {
+    if (!journalInput.trim() || journalLoading) return
+    setJournalLoading(true)
+    setJournalInsight(null)
+
+    // Save to journal
+    try {
+      const existing = JSON.parse(localStorage.getItem('anchor_journal') || '[]')
+      existing.push({
+        id: crypto.randomUUID(),
+        text: journalInput.trim(),
+        mood: selectedMood || undefined,
+        timestamp: new Date().toISOString(),
+      })
+      localStorage.setItem('anchor_journal', JSON.stringify(existing.slice(-50)))
+    } catch { /* silent */ }
+
+    // Get AI response
+    try {
+      const profileRaw = localStorage.getItem('anchor_user_profile')
+      const profile = profileRaw ? JSON.parse(profileRaw) : null
+
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: `User just logged during check-in: "${journalInput}"${selectedMood ? ` (mood: ${selectedMood})` : ''}. Respond in ONE sentence (max 15 words) — validate their feeling and give one tiny suggestion. No questions.`,
+          mode: 'journal',
+          profile,
+          recentMoods: [],
+        }),
+      })
+
+      if (response.ok) {
+        const reader = response.body?.getReader()
+        const decoder = new TextDecoder()
+        let text = ''
+        if (reader) {
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+            text += decoder.decode(value, { stream: true })
+          }
+        }
+        setJournalInsight(text)
+      }
+    } catch { /* silent */ }
+
+    setJournalInput('')
+    setJournalLoading(false)
+  }
+
   function formatDate(timestamp: string) {
     return new Date(timestamp).toLocaleDateString(undefined, {
       month: 'short',
@@ -176,6 +232,44 @@ export default function CheckInPage() {
               )
             })}
           </div>
+        </Card>
+
+        {/* Quick Journal Log */}
+        <Card className="p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <PenLine className="h-4 w-4 text-muted-foreground" />
+            <span className="text-xs font-medium text-muted-foreground">Want to say more? Log what&apos;s on your mind.</span>
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={journalInput}
+              onChange={(e) => setJournalInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleJournalSubmit()}
+              placeholder="What's triggering this feeling..."
+              className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-muted-foreground/60"
+              disabled={journalLoading}
+            />
+            <Button
+              size="sm"
+              onClick={handleJournalSubmit}
+              disabled={!journalInput.trim() || journalLoading}
+              aria-label="Log feeling"
+              className="shrink-0"
+            >
+              {journalLoading ? (
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+          {journalInsight && (
+            <p className="mt-2.5 text-sm text-primary flex items-start gap-1.5">
+              <Sparkles className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
+              {journalInsight}
+            </p>
+          )}
         </Card>
 
         {/* Loading State */}
