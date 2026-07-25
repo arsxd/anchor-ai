@@ -20,7 +20,7 @@ type UserRole = 'recovery' | 'caregiver' | null;
 
 const recoveryLinks = [
   { href: '/', label: 'Home', icon: Anchor },
-  { href: '/chat', label: 'Chat', icon: MessageCircle },
+  { href: '/chat', label: 'Talk', icon: MessageCircle },
   { href: '/scripts', label: 'Scripts', icon: ClipboardList },
   { href: '/checkin', label: 'Check-in', icon: BarChart3 },
 ];
@@ -29,7 +29,7 @@ const caregiverLinks = [
   { href: '/', label: 'Home', icon: Anchor },
   { href: '/caregiver', label: 'Dashboard', icon: Heart },
   { href: '/caregiver-portal', label: 'Portal', icon: Heart },
-  { href: '/chat', label: 'Chat', icon: MessageCircle },
+  { href: '/chat', label: 'Talk', icon: MessageCircle },
 ];
 
 export default function Navigation() {

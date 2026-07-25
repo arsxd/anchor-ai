@@ -176,7 +176,7 @@ export default function ChatPage() {
       <header className="border-b px-4 py-3 flex items-center justify-between relative z-10">
         <div className="flex items-center gap-2">
           <span className="text-xl font-bold flex items-center gap-2"><Anchor className="h-5 w-5 text-primary" /> AnchorAI</span>
-          <span className="text-xs text-muted-foreground">Companion</span>
+          <span className="text-xs text-muted-foreground">Your safe space to talk</span>
         </div>
         <div className="flex items-center gap-2">
           <LanguageSwitcher />
