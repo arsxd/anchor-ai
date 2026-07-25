@@ -261,8 +261,19 @@ export default function CaregiverPage() {
               <div className="h-20 bg-muted animate-pulse rounded" />
             )}
             {aiGuidance && !isLoadingGuidance && (
-              <div className="p-3 rounded-lg bg-muted" role="status" aria-live="polite">
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">{aiGuidance}</p>
+              <div className="p-4 rounded-lg bg-muted space-y-3" role="status" aria-live="polite">
+                {aiGuidance.split('\n').filter(Boolean).map((line, i) => {
+                  // Section headers (lines starting with emoji)
+                  if (/^[🫂✅🚫💡⚠️]/.test(line)) {
+                    return <p key={i} className="font-semibold text-sm text-foreground mt-2 first:mt-0">{line}</p>;
+                  }
+                  // Bullet points
+                  if (line.trim().startsWith('•') || line.trim().startsWith('-')) {
+                    return <p key={i} className="text-sm text-foreground pl-2 leading-relaxed">{line}</p>;
+                  }
+                  // Regular text
+                  return <p key={i} className="text-sm text-muted-foreground leading-relaxed">{line}</p>;
+                })}
               </div>
             )}
           </CardContent>
