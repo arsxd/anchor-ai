@@ -98,6 +98,17 @@ export default function CheckInPage() {
       const data = await response.json()
       setInsight(data.data ?? data)
       setShowInsight(true)
+
+      // Save AI insight back into the mood entry for caregiver visibility
+      const insightText = data.data?.insight || data.insight || "";
+      if (insightText) {
+        const updatedHistory = [...moodHistory];
+        const lastEntry = updatedHistory[updatedHistory.length - 1];
+        if (lastEntry) {
+          lastEntry.aiInsight = insightText;
+          localStorage.setItem('anchor_mood_history', JSON.stringify(updatedHistory));
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
     } finally {
