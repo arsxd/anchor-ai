@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Volume2, VolumeX, RefreshCw, Copy, Share2 } from 'lucide-react';
 import { SCRIPT_SCENARIOS, STORAGE_KEYS } from '@/lib/constants';
 import type { UserProfile, ScriptScenario } from '@/lib/types';
 
@@ -243,7 +244,7 @@ export default function ScriptsPage() {
                     onClick={handleReadAloud}
                     aria-label={isSpeaking ? 'Stop reading aloud' : 'Read script aloud'}
                   >
-                    {isSpeaking ? '⏹ Stop' : '🔊 Read Aloud'}
+                    {isSpeaking ? <><VolumeX className="h-4 w-4 mr-1" /> Stop</> : <><Volume2 className="h-4 w-4 mr-1" /> Read Aloud</>}
                   </Button>
                   <Button
                     variant="outline"
@@ -251,7 +252,7 @@ export default function ScriptsPage() {
                     onClick={handleRegenerate}
                     aria-label="Regenerate script"
                   >
-                    🔄 Regenerate
+                    <RefreshCw className="h-4 w-4 mr-1" /> Regenerate
                   </Button>
                   <Button
                     variant="outline"
@@ -259,7 +260,7 @@ export default function ScriptsPage() {
                     onClick={handleCopy}
                     aria-label="Copy script to clipboard"
                   >
-                    📋 Copy
+                    <Copy className="h-4 w-4 mr-1" /> Copy
                   </Button>
                   <Button
                     variant="outline"

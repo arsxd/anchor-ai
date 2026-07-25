@@ -1,26 +1,65 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import {
+  Anchor,
+  MessageCircle,
+  ClipboardList,
+  BarChart3,
+  Heart,
+  AlertTriangle,
+  LogOut,
+  Menu,
+  X,
+  Phone,
+} from 'lucide-react';
 
-const navLinks = [
-  { href: '/', label: 'Home' },
-  { href: '/chat', label: 'Chat' },
-  { href: '/scripts', label: 'Scripts' },
-  { href: '/checkin', label: 'Check-in' },
-  { href: '/caregiver', label: 'Caregiver' },
+const ROLE_KEY = 'anchor_user_role';
+
+type UserRole = 'recovery' | 'caregiver' | null;
+
+const recoveryLinks = [
+  { href: '/', label: 'Home', icon: Anchor },
+  { href: '/chat', label: 'Chat', icon: MessageCircle },
+  { href: '/scripts', label: 'Scripts', icon: ClipboardList },
+  { href: '/checkin', label: 'Check-in', icon: BarChart3 },
+];
+
+const caregiverLinks = [
+  { href: '/', label: 'Home', icon: Anchor },
+  { href: '/caregiver', label: 'Dashboard', icon: Heart },
+  { href: '/chat', label: 'Chat', icon: MessageCircle },
 ];
 
 export default function Navigation() {
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [role, setRole] = useState<UserRole>(null);
+
+  useEffect(() => {
+    const stored = localStorage.getItem(ROLE_KEY) as UserRole;
+    setRole(stored);
+  }, []);
+
+  // Don't show nav on login page
+  if (pathname === '/login') return null;
+
+  const navLinks = role === 'caregiver' ? caregiverLinks : recoveryLinks;
 
   const isActive = (href: string) => {
     if (href === '/') return pathname === '/';
     return pathname.startsWith(href);
   };
+
+  function handleLogout() {
+    localStorage.removeItem(ROLE_KEY);
+    setRole(null);
+    router.push('/login');
+  }
 
   return (
     <nav
@@ -31,38 +70,68 @@ export default function Navigation() {
         {/* App name */}
         <Link
           href="/"
-          className="flex items-center gap-1 text-lg font-semibold tracking-tight"
+          className="flex items-center gap-2 text-lg font-semibold tracking-tight"
         >
-          ⚓ AnchorAI
+          <Anchor className="h-5 w-5 text-primary" />
+          <span>AnchorAI</span>
         </Link>
 
         {/* Desktop nav links */}
         <ul className="hidden items-center gap-1 md:flex">
-          {navLinks.map((link) => (
-            <li key={link.href}>
-              <Link
-                href={link.href}
-                aria-current={isActive(link.href) ? 'page' : undefined}
-                className={`inline-flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground ${
-                  isActive(link.href)
-                    ? 'bg-accent text-accent-foreground'
-                    : 'text-muted-foreground'
-                }`}
-              >
-                {link.label}
-              </Link>
-            </li>
-          ))}
+          {navLinks.map((link) => {
+            const Icon = link.icon;
+            return (
+              <li key={link.href}>
+                <Link
+                  href={link.href}
+                  aria-current={isActive(link.href) ? 'page' : undefined}
+                  className={`inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground ${
+                    isActive(link.href)
+                      ? 'bg-accent text-accent-foreground'
+                      : 'text-muted-foreground'
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {link.label}
+                </Link>
+              </li>
+            );
+          })}
         </ul>
 
-        {/* Right section: SOS + Mobile toggle */}
+        {/* Right section */}
         <div className="flex items-center gap-2">
+          {/* Role badge */}
+          {role && (
+            <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+              {role === 'recovery' ? (
+                <><Heart className="h-3 w-3" /> Recovery</>
+              ) : (
+                <><Heart className="h-3 w-3" /> Caregiver</>
+              )}
+            </span>
+          )}
+
           {/* SOS Button - always visible */}
           <Button variant="destructive" size="sm" render={<Link href="/crisis" />}>
+            <Phone className="h-4 w-4 mr-1" />
             SOS
           </Button>
 
-          {/* Mobile hamburger button */}
+          {/* Logout / Switch role */}
+          {role && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLogout}
+              aria-label="Switch role"
+              className="hidden sm:inline-flex"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          )}
+
+          {/* Mobile hamburger */}
           <button
             type="button"
             className="inline-flex items-center justify-center rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground md:hidden"
@@ -72,35 +141,9 @@ export default function Navigation() {
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             {mobileMenuOpen ? (
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
+              <X className="h-5 w-5" aria-hidden="true" />
             ) : (
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
-                />
-              </svg>
+              <Menu className="h-5 w-5" aria-hidden="true" />
             )}
           </button>
         </div>
@@ -110,22 +153,37 @@ export default function Navigation() {
       {mobileMenuOpen && (
         <div id="mobile-menu" className="border-t md:hidden">
           <ul className="space-y-1 px-4 py-3">
-            {navLinks.map((link) => (
-              <li key={link.href}>
-                <Link
-                  href={link.href}
-                  aria-current={isActive(link.href) ? 'page' : undefined}
-                  className={`block rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground ${
-                    isActive(link.href)
-                      ? 'bg-accent text-accent-foreground'
-                      : 'text-muted-foreground'
-                  }`}
-                  onClick={() => setMobileMenuOpen(false)}
+            {navLinks.map((link) => {
+              const Icon = link.icon;
+              return (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    aria-current={isActive(link.href) ? 'page' : undefined}
+                    className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground ${
+                      isActive(link.href)
+                        ? 'bg-accent text-accent-foreground'
+                        : 'text-muted-foreground'
+                    }`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {link.label}
+                  </Link>
+                </li>
+              );
+            })}
+            {role && (
+              <li>
+                <button
+                  onClick={handleLogout}
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                 >
-                  {link.label}
-                </Link>
+                  <LogOut className="h-4 w-4" />
+                  Switch Role
+                </button>
               </li>
-            ))}
+            )}
           </ul>
         </div>
       )}

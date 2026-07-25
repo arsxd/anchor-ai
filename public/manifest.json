@@ -1,0 +1,20 @@
+{
+  "name": "AnchorAI — Recovery & Prevention",
+  "short_name": "AnchorAI",
+  "description": "Multi-modal GenAI-powered recovery and prevention platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0a0a0a",
+  "orientation": "portrait",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["health", "medical", "lifestyle"]
+}

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ChatMessageList } from "@/components/ChatMessageList";
 import { ChatModeSelector } from "@/components/ChatModeSelector";
+import { Mic, MicOff, Send, Anchor } from "lucide-react";
 import type { ChatMessage, ChatMode } from "@/lib/types";
 
 export default function ChatPage() {
@@ -152,7 +153,7 @@ export default function ChatPage() {
 
       <header className="border-b px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-xl font-bold">⚓ AnchorAI</span>
+          <span className="text-xl font-bold flex items-center gap-2"><Anchor className="h-5 w-5 text-primary" /> AnchorAI</span>
           <span className="text-xs text-muted-foreground">Companion</span>
         </div>
         <ChatModeSelector currentMode={mode} onModeChange={setMode} />
@@ -196,7 +197,7 @@ export default function ChatPage() {
             aria-label={isListening ? "Stop listening" : "Start voice input"}
             className="h-11 w-11 shrink-0"
           >
-            {isListening ? "⏹️" : "🎙️"}
+            {isListening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
           </Button>
           <Button
             onClick={handleSend}
@@ -205,11 +206,11 @@ export default function ChatPage() {
             aria-label="Send message"
             className="h-11 w-11 shrink-0"
           >
-            →
+            <Send className="h-5 w-5" />
           </Button>
         </div>
         <p className="text-xs text-muted-foreground mt-2 text-center">
-          Zero-typing: tap 🎙️ to speak · AI reads responses aloud · Powered by Google Gemini
+          Zero-typing: tap mic to speak · AI reads responses aloud · Powered by Google Gemini
         </p>
       </div>
     </main>

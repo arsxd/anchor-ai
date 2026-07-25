@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import { APP_DESCRIPTION, APP_NAME, CRISIS_HOTLINES } from "@/lib/constants";
+import { Mic, ClipboardList, Shield, Heart, Brain, Zap, MessageCircle, BarChart3, Phone } from "lucide-react";
 
 export default function Home() {
   return (
@@ -37,17 +38,17 @@ export default function Home() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
           <Link href="/chat">
             <Button size="lg" className="text-base w-full sm:w-auto h-12 px-8 font-semibold">
-              <span aria-hidden="true">🤖</span> Talk to AnchorAI
+              <MessageCircle className="h-5 w-5 mr-2" /> Talk to AnchorAI
             </Button>
           </Link>
           <Link href="/checkin">
             <Button variant="outline" size="lg" className="text-base w-full sm:w-auto h-12 px-8 font-semibold">
-              <span aria-hidden="true">📊</span> Daily Check-In
+              <BarChart3 className="h-5 w-5 mr-2" /> Daily Check-In
             </Button>
           </Link>
           <Link href="/crisis">
             <Button variant="destructive" size="lg" className="text-base w-full sm:w-auto h-12 px-8 font-semibold">
-              <span aria-hidden="true">🆘</span> Crisis Support
+              <Phone className="h-5 w-5 mr-2" /> Crisis Support
             </Button>
           </Link>
         </div>
@@ -74,37 +75,37 @@ export default function Home() {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 max-w-5xl mx-auto">
           <FeatureCard
-            icon="🎙️"
+            icon={<Mic className="h-7 w-7 text-blue-500" />}
             title="Voice-First Interaction"
             description="Speak naturally — no typing needed. AI responds with voice when your hands are shaking."
             badge="MULTI-MODAL"
           />
           <FeatureCard
-            icon="📋"
+            icon={<ClipboardList className="h-7 w-7 text-green-500" />}
             title="Emergency Scripts"
             description="AI generates personalized scripts for refusing substances — ready when you can't improvise."
             badge="PERSONALIZED"
           />
           <FeatureCard
-            icon="🛡️"
+            icon={<Shield className="h-7 w-7 text-amber-500" />}
             title="Prevention Engine"
             description="Detects declining mood patterns and intervenes proactively — before crisis hits."
             badge="PROACTIVE AI"
           />
           <FeatureCard
-            icon="💙"
+            icon={<Heart className="h-7 w-7 text-purple-500" />}
             title="Caregiver Support"
             description="Guidance for families: what to say, what to avoid, and when to get professional help."
             badge="DUAL PERSONA"
           />
           <FeatureCard
-            icon="🧠"
+            icon={<Brain className="h-7 w-7 text-pink-500" />}
             title="Personalized AI"
             description="Knows your triggers, your 'why', and your support network. Uses YOUR words to motivate you."
             badge="CONTEXTUAL"
           />
           <FeatureCard
-            icon="⚡"
+            icon={<Zap className="h-7 w-7 text-red-500" />}
             title="Instant Crisis Response"
             description="One tap. AI-generated grounding steps. Voice reads them aloud. Under 5 seconds."
             badge="ZERO-TYPING"
@@ -161,12 +162,12 @@ function StatCard({ value, label }: { value: string; label: string }) {
   );
 }
 
-function FeatureCard({ icon, title, description, badge }: { icon: string; title: string; description: string; badge: string }) {
+function FeatureCard({ icon, title, description, badge }: { icon: React.ReactNode; title: string; description: string; badge: string }) {
   return (
     <Card className="text-left hover:border-primary/30 transition-colors">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <span aria-hidden="true" className="text-3xl">{icon}</span>
+          <span aria-hidden="true">{icon}</span>
           <span className="text-[10px] font-bold tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-full">{badge}</span>
         </div>
         <CardTitle className="text-base mt-2">{title}</CardTitle>
