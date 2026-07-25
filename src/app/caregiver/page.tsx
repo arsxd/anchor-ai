@@ -33,15 +33,7 @@ export default function CaregiverPage() {
     }
   }, []);
 
-  // Generate AI status summary on load when data exists
-  useEffect(() => {
-    if (moodHistory.length > 0 && !aiStatus) {
-      generateStatus();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [moodHistory]);
-
-  async function generateStatus() {
+  async function fetchStatus() {
     setIsLoadingStatus(true);
     try {
       const res = await fetch("/api/caregiver", {
@@ -62,6 +54,14 @@ export default function CaregiverPage() {
       setIsLoadingStatus(false);
     }
   }
+
+  // Generate AI status summary on load when data exists
+  useEffect(() => {
+    if (moodHistory.length > 0 && !aiStatus) {
+      fetchStatus();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [moodHistory]);
 
   const fetchGuidance = useCallback(
     async (requestType: "guidance" | "deescalation") => {

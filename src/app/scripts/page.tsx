@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Volume2, VolumeX, RefreshCw, Copy, Share2 } from 'lucide-react';
+import { Volume2, VolumeX, RefreshCw, Copy } from 'lucide-react';
 import { SCRIPT_SCENARIOS, STORAGE_KEYS } from '@/lib/constants';
 import type { UserProfile, ScriptScenario } from '@/lib/types';
 
