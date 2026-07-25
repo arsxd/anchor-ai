@@ -10,9 +10,10 @@ export const MAX_CONTACTS_COUNT = 5;
 export const GEMINI_MODEL = "gemini-flash-latest";
 
 export const CRISIS_HOTLINES = [
-  { name: "Vandrevala Foundation", number: "1860-2662-345", available: "24/7" },
-  { name: "iCall", number: "9152987821", available: "Mon-Sat 8am-10pm" },
+  { name: "Tele-MANAS", number: "14416", available: "24/7, 20 languages" },
+  { name: "KIRAN Helpline", number: "1800-599-0019", available: "24/7, Toll-Free" },
   { name: "NIMHANS", number: "080-46110007", available: "24/7" },
+  { name: "DISHA (Kerala)", number: "1056", available: "24/7" },
   { name: "Emergency", number: "112", available: "24/7" },
 ] as const;
 
