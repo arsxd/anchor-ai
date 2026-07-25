@@ -1,11 +1,76 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Volume2, VolumeX, RefreshCw, Copy } from 'lucide-react';
-import { SCRIPT_SCENARIOS, STORAGE_KEYS } from '@/lib/constants';
+import {
+  Volume2,
+  VolumeX,
+  RefreshCw,
+  Copy,
+  Share2,
+  Check,
+  PartyPopper,
+  Briefcase,
+  Users,
+  Handshake,
+  Waves,
+  HeartCrack,
+} from 'lucide-react';
+import { STORAGE_KEYS } from '@/lib/constants';
 import type { UserProfile, ScriptScenario } from '@/lib/types';
+
+// Rich scenario data with icons and context
+const SCENARIOS: {
+  key: ScriptScenario;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  description: string;
+  example: string;
+}[] = [
+  {
+    key: 'party',
+    label: 'Party Pressure',
+    icon: PartyPopper,
+    description: 'Someone offers you a drink or substance at a social event',
+    example: '"Come on, one won\'t hurt..."',
+  },
+  {
+    key: 'workplace',
+    label: 'Work Event',
+    icon: Briefcase,
+    description: 'Happy hour, client dinner, or office celebration with alcohol',
+    example: '"Why aren\'t you drinking?"',
+  },
+  {
+    key: 'family',
+    label: 'Family Gathering',
+    icon: Users,
+    description: 'Holiday dinner or reunion where substances are present',
+    example: '"Everyone else is having some..."',
+  },
+  {
+    key: 'friend',
+    label: "Friend's Offer",
+    icon: Handshake,
+    description: 'A close friend pressures you or doesn\'t understand your boundaries',
+    example: '"I thought you were over that phase"',
+  },
+  {
+    key: 'craving',
+    label: 'Intense Craving',
+    icon: Waves,
+    description: 'A powerful urge hits when you\'re alone — words to say to yourself',
+    example: 'That voice in your head saying "just this once"',
+  },
+  {
+    key: 'relapse',
+    label: 'Near-Relapse',
+    icon: HeartCrack,
+    description: 'You\'re on the edge — this script talks you back from the brink',
+    example: 'When your hand is already reaching...',
+  },
+];
 
 export default function ScriptsPage() {
   const [selectedScenario, setSelectedScenario] = useState<ScriptScenario | null>(null);
@@ -13,8 +78,11 @@ export default function ScriptsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [shareConfirm, setShareConfirm] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [shared, setShared] = useState(false);
+  const [autoSpeak, setAutoSpeak] = useState(true);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const scriptRef = useRef<HTMLDivElement>(null);
 
   const getProfile = (): UserProfile | null => {
     try {
@@ -25,9 +93,28 @@ export default function ScriptsPage() {
     }
   };
 
+  // Auto-read aloud when script is complete
+  useEffect(() => {
+    if (script && !isLoading && autoSpeak && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(script);
+      utterance.rate = 0.9;
+      utterance.onend = () => setIsSpeaking(false);
+      utterance.onerror = () => setIsSpeaking(false);
+      setIsSpeaking(true);
+      window.speechSynthesis.speak(utterance);
+    }
+  }, [script, isLoading, autoSpeak]);
+
   const generateScript = useCallback(async (scenario: ScriptScenario) => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
+    }
+
+    // Stop any current speech
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
     }
 
     const controller = new AbortController();
@@ -37,6 +124,8 @@ export default function ScriptsPage() {
     setScript('');
     setError(null);
     setIsLoading(true);
+    setCopied(false);
+    setShared(false);
 
     try {
       const profile = getProfile();
@@ -48,67 +137,44 @@ export default function ScriptsPage() {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to generate script (${response.status})`);
+        throw new Error('Failed to generate script');
       }
 
       const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error('No response stream available');
-      }
+      if (!reader) throw new Error('No response stream');
 
       const decoder = new TextDecoder();
-      let buffer = '';
+      let fullText = '';
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-
         const chunk = decoder.decode(value, { stream: true });
-        buffer += chunk;
-
-        // Display word-by-word from buffer
-        const words = buffer.split(/(\s+)/);
-        // Keep last partial word in buffer if chunk didn't end with space
-        if (!chunk.endsWith(' ') && !chunk.endsWith('\n')) {
-          buffer = words.pop() || '';
-        } else {
-          buffer = '';
-        }
-
-        const displayText = words.join('');
-        if (displayText) {
-          setScript((prev) => prev + displayText);
-        }
+        fullText += chunk;
+        setScript(fullText);
       }
 
-      // Flush remaining buffer
-      if (buffer) {
-        setScript((prev) => prev + buffer);
-      }
+      // Scroll to script
+      setTimeout(() => {
+        scriptRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') return;
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+      setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  const handleRegenerate = () => {
-    if (selectedScenario) {
-      generateScript(selectedScenario);
-    }
-  };
-
   const handleReadAloud = () => {
     if (!script) return;
-
     if (isSpeaking) {
       window.speechSynthesis.cancel();
       setIsSpeaking(false);
       return;
     }
-
     const utterance = new SpeechSynthesisUtterance(script);
+    utterance.rate = 0.9;
     utterance.onend = () => setIsSpeaking(false);
     utterance.onerror = () => setIsSpeaking(false);
     setIsSpeaking(true);
@@ -119,41 +185,34 @@ export default function ScriptsPage() {
     if (!script) return;
     try {
       await navigator.clipboard.writeText(script);
-    } catch {
-      // Fallback: select text for manual copy
-    }
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* silent */ }
   };
 
-  const handleShareToCaregiver = async () => {
+  const handleShare = async () => {
     if (!script) return;
+    const scenarioLabel = selectedScenario ? SCENARIOS.find(s => s.key === selectedScenario)?.label : 'Emergency';
+    const shareText = `[AnchorAI Script — ${scenarioLabel}]\n\n${script}`;
 
-    // Try native share API first (mobile)
     if (navigator.share) {
       try {
-        await navigator.share({
-          title: 'My Emergency Script - AnchorAI',
-          text: script,
-        });
-        setShareConfirm(true);
-        setTimeout(() => setShareConfirm(false), 3000);
+        await navigator.share({ title: `Emergency Script: ${scenarioLabel}`, text: shareText });
+        setShared(true);
+        setTimeout(() => setShared(false), 2000);
         return;
-      } catch {
-        // User cancelled or share failed, fall through to clipboard
-      }
+      } catch { /* cancelled */ }
     }
 
-    // Fallback: copy to clipboard
     try {
-      await navigator.clipboard.writeText(script);
-      setShareConfirm(true);
-      setTimeout(() => setShareConfirm(false), 3000);
-    } catch {
-      // Silent fail
-    }
+      await navigator.clipboard.writeText(shareText);
+      setShared(true);
+      setTimeout(() => setShared(false), 2000);
+    } catch { /* silent */ }
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20 md:pb-8">
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground"
@@ -161,126 +220,138 @@ export default function ScriptsPage() {
         Skip to content
       </a>
 
-      <main id="main-content" className="mx-auto max-w-3xl px-4 py-8">
-        <h1 className="mb-2 text-2xl font-bold tracking-tight">
-          Emergency Script Generator
-        </h1>
-        <p className="mb-8 text-muted-foreground">
-          Choose a scenario to generate a personalized script for handling difficult situations.
-        </p>
+      <main id="main-content" className="mx-auto max-w-2xl px-4 py-6">
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold tracking-tight">
+            Emergency Scripts
+          </h1>
+          <p className="mt-1 text-muted-foreground">
+            AI generates words for when you can&apos;t think. Tap a scenario — your script is read aloud automatically.
+          </p>
+        </div>
 
-        {/* Scenario Selection */}
-        <section aria-label="Scenario selection">
-          <h2 className="mb-3 text-sm font-medium text-muted-foreground uppercase tracking-wide">
-            Select a scenario
-          </h2>
-          <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {(Object.entries(SCRIPT_SCENARIOS) as [ScriptScenario, { label: string; emoji: string }][]).map(
-              ([key, { label, emoji }]) => (
-                <Button
-                  key={key}
-                  variant={selectedScenario === key ? 'default' : 'outline'}
-                  size="lg"
-                  className="h-auto flex-col gap-1 py-3"
-                  onClick={() => generateScript(key)}
-                  aria-label={`Generate script for ${label} scenario`}
-                  aria-pressed={selectedScenario === key}
-                  disabled={isLoading}
-                >
-                  <span className="text-xl" aria-hidden="true">
-                    {emoji}
-                  </span>
-                  <span className="text-xs">{label}</span>
-                </Button>
-              )
-            )}
+        {/* Auto-speak toggle */}
+        <div className="mb-5 flex items-center gap-2">
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={autoSpeak}
+              onChange={(e) => setAutoSpeak(e.target.checked)}
+              className="h-4 w-4 rounded border-border accent-primary"
+            />
+            <Volume2 className="h-4 w-4 text-muted-foreground" />
+            <span className="text-muted-foreground">Auto-read aloud</span>
+          </label>
+        </div>
+
+        {/* Scenario Cards */}
+        <section aria-label="Choose your scenario">
+          <div className="grid gap-3 sm:grid-cols-2">
+            {SCENARIOS.map(({ key, label, icon: Icon, description, example }) => (
+              <button
+                key={key}
+                onClick={() => generateScript(key)}
+                disabled={isLoading}
+                aria-label={`Generate script for: ${label}`}
+                aria-pressed={selectedScenario === key}
+                className={`group text-left rounded-xl border-2 p-4 transition-all hover:shadow-md ${
+                  selectedScenario === key
+                    ? 'border-primary bg-primary/5 shadow-sm'
+                    : 'border-border hover:border-primary/50'
+                } ${isLoading ? 'opacity-60 cursor-wait' : 'cursor-pointer'}`}
+              >
+                <div className="flex items-start gap-3">
+                  <div className={`flex-shrink-0 rounded-lg p-2 ${
+                    selectedScenario === key ? 'bg-primary/10' : 'bg-secondary'
+                  }`}>
+                    <Icon className={`h-5 w-5 ${selectedScenario === key ? 'text-primary' : 'text-muted-foreground'}`} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-sm">{label}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+                    <p className="text-xs italic text-muted-foreground/70 mt-1">{example}</p>
+                  </div>
+                </div>
+              </button>
+            ))}
           </div>
         </section>
 
         {/* Script Output */}
         {(script || isLoading || error) && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                {selectedScenario && (
-                  <span aria-hidden="true">
-                    {SCRIPT_SCENARIOS[selectedScenario].emoji}
-                  </span>
-                )}
-                {selectedScenario
-                  ? SCRIPT_SCENARIOS[selectedScenario].label
-                  : 'Generated Script'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div
-                role="region"
-                aria-label="Generated script output"
-                aria-live="polite"
-                aria-atomic="false"
-                aria-busy={isLoading}
-                className="min-h-[120px] rounded-lg bg-muted/50 p-4"
-              >
-                {error ? (
-                  <p className="text-destructive" role="alert">
-                    {error}
-                  </p>
-                ) : isLoading && !script ? (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true" />
-                    <span>Generating your script…</span>
-                  </div>
-                ) : (
-                  <p className="whitespace-pre-wrap leading-relaxed">{script}</p>
-                )}
-              </div>
-
-              {/* Action Buttons */}
-              {script && !isLoading && (
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleReadAloud}
-                    aria-label={isSpeaking ? 'Stop reading aloud' : 'Read script aloud'}
-                  >
-                    {isSpeaking ? <><VolumeX className="h-4 w-4 mr-1" /> Stop</> : <><Volume2 className="h-4 w-4 mr-1" /> Read Aloud</>}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleRegenerate}
-                    aria-label="Regenerate script"
-                  >
-                    <RefreshCw className="h-4 w-4 mr-1" /> Regenerate
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleCopy}
-                    aria-label="Copy script to clipboard"
-                  >
-                    <Copy className="h-4 w-4 mr-1" /> Copy
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleShareToCaregiver}
-                    disabled={!script}
-                    aria-label="Share script with caregiver"
-                  >
-                    📤 Share with Caregiver
-                  </Button>
+          <div ref={scriptRef} className="mt-6">
+            <Card className="border-2 border-primary/20">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg">Your Script</CardTitle>
+                  {isSpeaking && (
+                    <span className="flex items-center gap-1 text-xs text-primary font-medium">
+                      <Volume2 className="h-3.5 w-3.5 animate-pulse" />
+                      Speaking...
+                    </span>
+                  )}
                 </div>
-              )}
+                {selectedScenario && (
+                  <p className="text-xs text-muted-foreground">
+                    Say this out loud — or let AnchorAI read it for you.
+                  </p>
+                )}
+              </CardHeader>
+              <CardContent>
+                <div
+                  role="region"
+                  aria-label="Your personalized emergency script"
+                  aria-live="polite"
+                  aria-busy={isLoading}
+                  className="min-h-[100px] rounded-lg bg-secondary/50 p-5 border"
+                >
+                  {error ? (
+                    <p className="text-destructive text-sm" role="alert">{error}</p>
+                  ) : isLoading && !script ? (
+                    <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                      <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                      Writing your personalized script...
+                    </div>
+                  ) : (
+                    <p className="whitespace-pre-wrap leading-relaxed text-[15px]">{script}</p>
+                  )}
+                </div>
 
-              {shareConfirm && (
-                <p className="mt-2 text-sm text-green-700 dark:text-green-300" role="status" aria-live="polite">
-                  ✓ Copied - share with your caregiver
-                </p>
-              )}
-            </CardContent>
-          </Card>
+                {/* Actions */}
+                {script && !isLoading && (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Button
+                      variant={isSpeaking ? "default" : "outline"}
+                      size="sm"
+                      onClick={handleReadAloud}
+                      aria-label={isSpeaking ? 'Stop reading' : 'Read aloud'}
+                    >
+                      {isSpeaking ? <><VolumeX className="h-4 w-4 mr-1.5" /> Stop</> : <><Volume2 className="h-4 w-4 mr-1.5" /> Read Aloud</>}
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => generateScript(selectedScenario!)}>
+                      <RefreshCw className="h-4 w-4 mr-1.5" /> New Version
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleCopy}>
+                      {copied ? <><Check className="h-4 w-4 mr-1.5" /> Copied!</> : <><Copy className="h-4 w-4 mr-1.5" /> Copy</>}
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleShare}>
+                      {shared ? <><Check className="h-4 w-4 mr-1.5" /> Shared!</> : <><Share2 className="h-4 w-4 mr-1.5" /> Share</>}
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Empty state - before any scenario is selected */}
+        {!script && !isLoading && !error && (
+          <div className="mt-8 text-center py-8">
+            <p className="text-sm text-muted-foreground">
+              ↑ Tap a scenario above. Your personalized script will appear here and be read aloud automatically.
+            </p>
+          </div>
         )}
       </main>
     </div>

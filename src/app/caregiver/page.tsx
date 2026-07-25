@@ -137,6 +137,65 @@ export default function CaregiverPage() {
           </CardContent>
         </Card>
 
+        {/* Severity-Based Notifications */}
+        {riskAssessment && riskAssessment.riskLevel !== "low" && (
+          <Card className={riskAssessment.riskLevel === "high" ? "border-red-500/50 bg-red-500/10" : "border-yellow-500/40 bg-yellow-500/10"} role="alert">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <span className="text-2xl shrink-0" aria-hidden="true">
+                  {riskAssessment.riskLevel === "high" ? "🚨" : "⚠️"}
+                </span>
+                <div>
+                  <p className="font-semibold text-sm">
+                    {riskAssessment.riskLevel === "high"
+                      ? "Immediate attention recommended"
+                      : "Elevated concern — stay attentive"}
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {riskAssessment.patternDescription}
+                  </p>
+                  <div className="mt-3 space-y-2">
+                    {riskAssessment.riskLevel === "high" ? (
+                      <>
+                        <SuggestedAction icon="📞" text={`Call ${patientName} now — a check-in call can interrupt a crisis`} priority="high" />
+                        <SuggestedAction icon="🏥" text="Consider contacting their therapist or counselor" priority="high" />
+                        <SuggestedAction icon="🏠" text="If possible, be physically present with them" priority="medium" />
+                      </>
+                    ) : (
+                      <>
+                        <SuggestedAction icon="💬" text={`Send ${patientName} a supportive text — "thinking of you"`} priority="medium" />
+                        <SuggestedAction icon="📅" text="Plan a low-pressure activity together this week" priority="low" />
+                        <SuggestedAction icon="👁️" text="Monitor check-ins more closely for the next 48 hours" priority="medium" />
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* When things are good — positive reinforcement */}
+        {riskAssessment?.riskLevel === "low" && moodHistory.length >= 3 && (
+          <Card className="border-green-500/30 bg-green-500/5">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <span className="text-2xl shrink-0" aria-hidden="true">✅</span>
+                <div>
+                  <p className="font-semibold text-sm">Things are looking stable</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {patientName}&apos;s mood trend is {riskAssessment.recentTrend}. Keep doing what you&apos;re doing.
+                  </p>
+                  <div className="mt-3 space-y-2">
+                    <SuggestedAction icon="🎉" text={`Acknowledge ${patientName}'s progress — recognition matters`} priority="low" />
+                    <SuggestedAction icon="💚" text="Take time for YOUR self-care today" priority="medium" />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* AI Status Summary */}
         {(aiStatus || isLoadingStatus) && (
           <Card>
@@ -273,4 +332,16 @@ function formatTimeAgo(timestamp: string): string {
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
   return `${days}d ago`;
+}
+
+function SuggestedAction({ icon, text, priority }: { icon: string; text: string; priority: "high" | "medium" | "low" }) {
+  return (
+    <div className={`flex items-center gap-2 text-sm p-2 rounded ${
+      priority === "high" ? "bg-red-500/10" :
+      priority === "medium" ? "bg-muted/50" : "bg-muted/30"
+    }`}>
+      <span aria-hidden="true">{icon}</span>
+      <span className={priority === "high" ? "font-medium" : ""}>{text}</span>
+    </div>
+  );
 }
