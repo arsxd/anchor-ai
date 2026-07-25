@@ -7,7 +7,7 @@ export const MAX_PROFILE_FIELD_LENGTH = 200;
 export const MAX_TRIGGERS_COUNT = 10;
 export const MAX_CONTACTS_COUNT = 5;
 
-export const GEMINI_MODEL = "gemini-1.5-flash";
+export const GEMINI_MODEL = "gemini-flash-latest";
 
 export const CRISIS_HOTLINES = [
   { name: "SAMHSA Helpline", number: "1-800-662-4357", available: "24/7" },
