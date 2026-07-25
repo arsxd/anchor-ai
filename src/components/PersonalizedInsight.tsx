@@ -45,6 +45,7 @@ export function PersonalizedInsight() {
       setStats({ streak, totalCheckins, trend: risk.recentTrend, daysInRecovery });
 
       if (moodHistory.length > 0) {
+        // eslint-disable-next-line react-hooks/immutability
         doFetchInsight(userProfile, moodHistory);
       } else {
         setInsight(`${userProfile.name}, your anchor: "${userProfile.myWhy}"`);
